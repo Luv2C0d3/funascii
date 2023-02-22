@@ -1,13 +1,13 @@
 # Creating a minimal language in racket
 This project is a modified version of the examples described in 
 [ragg: a Racket AST Generator Generator](https://docs.racket-lang.org/ragg/)
-which are in the project [Simple line drawing](https://github.com/dyoo/ragg/tree/master/ragg/examples/simple-line-drawing) by  Danny Yoo's. 
+which are in the project [Simple line drawing](https://github.com/dyoo/ragg/tree/master/ragg/examples/simple-line-drawing) by  Danny Yoo. 
 
 # Purpose of this project
 I was having trouble understanding (1) what is the **minimum** amount of boilerplate needed to create a language in racket and (2) the difference
 between when things are interpreted and when things are compiled in racket. 
 
-The `ragg` guide assumes you understand how to create a language, but it was not that clear to me. Add to that, the different racket functions/macros, though very handy, were creating a layer of magic which in my case was making things harder to understand.
+The `ragg` guide assumes you understand how to create a language, but the concept, was not that clear to me. Add to that, the different racket functions/macros, though very handy, were creating a layer of magic which in my case was making things harder to understand.
 
 The result of my investigations is this project
 where I included the code for the compiler exactly as it is in Danny Yoo's original simple
@@ -40,7 +40,7 @@ Examples are in the `examples` folder
 $ racket examples/sample-1.rkt
 ```
 
-## Check how interpret and parse-only are different than compile
+## Check how interpret is different than compile
 For any example, in the first line which reads:
 
 ```
@@ -51,24 +51,29 @@ Replace it by this line to interpret:
 #lang funascii/interpret
 ```
 > Note: There are several interpreters, so you may want to play changing the interpret line
-by `interpret-2` or 3 and so on.
+by `interpret-2` or `interpret-3`.
 
 ## Use a parse-only language to check the output of the parser
-There is also a language, which simply shows the parse tree, change the `#lang` line to this to use it:
+There is also a language, which simply shows the parse tree, to use it change the `#lang` line to:
 ```
 #lang funascii/parse-only
 ```
 
 # Let's start from the beginning
+Or rather the "start from the end" as really what I was doing through the project is de-constructing the advanced compile sample into something easier for me to assimilate from generic scheme language knowledge.
+
 ## So, what do I need for a language in racket?
 
 * Register the project as per above.
-* Need a parser, a reader/tokenizer and an expander.
-* Need a lang folder with a reader.rkt inside that ties together all the parts.
+* A reader and an expander.
+* A lang folder with a reader.rkt inside that ties together all the parts.
 
-Several notes are in order for the bullet points:
-* The parser, need not be `ragg`, it could be just about anything that massages syntax through the reader stages to get to a syntax object (an enriched s-expression) which can be further processed by the expander. `ragg` however is convenient, because it offers a DSL to write a BNF like grammar for a language.
-* The reader/tokenizer, in the case of `ragg`, is a convenience in charge of creating tokens such that ragg instead of seeing "foo" as "f" "o" "o" and thus having to assemble from there the concept of an identifier, sees a token of type IDENTIFIER with value "foo".
+**In a bit more detail**:
+
+* The reader may include a parser and a tokenizer to massage the input to obtain an a syntax object (an enriched s-expression) out of the reader.
+  * The tokenizer, in the case of `ragg`, is a convenience in charge of creating tokens, the minimal lexical units seen, such that ragg instead of seeing "foo" as "f" "o" "o" and thus having to assemble from there the concept of an identifier, sees a token of type IDENTIFIER with value "foo".
+  * The parser, need not be `ragg`, it could be just about anything that massages syntax through the reader stages to get to a syntax object which can be further processed by the expander. `ragg` however is convenient, because it offers a DSL to write a BNF like grammar for a language.
+  
 * The lang folder is what was used in the original [Simple line drawing](https://github.com/dyoo/ragg/tree/master/ragg/examples/simple-line-drawing) project, but there is an alternate way to define languages, which is what I used for all the additional language flavors in this project.
 
 ## First step: Simple line drawing using original files
@@ -98,11 +103,13 @@ funascii/semantics
 
 
 ## Second step: Simple line drawing interpreter
-In the ragg guide section [2.6 From interpretation to compilation](https://docs.racket-lang.org/ragg/#%28part._.From_interpretation_to_compilation%29), there is a brief mention in parentheses which reads _"(We could just resort to simply calling into the interpreter we just wrote up, but this section is meant to show that compilation is also viable.)"_. Now, the problem I was having is that the ragg guide is dealing with a two concepts in a single step: 
+Going back, in the ragg guide section [2.6 From interpretation to compilation](https://docs.racket-lang.org/ragg/#%28part._.From_interpretation_to_compilation%29), there is a brief mention in parentheses which reads _"(We could just resort to simply calling into the interpreter we just wrote up, but this section is meant to show that compilation is also viable.)"_. Now, the problem I was having is that the ragg guide is dealing with two concepts in a single step: 
 1. Turning the code into a language and
 2. Transforming interpreted code to compiled code.
 
-This was just too much for me as I needed to separate the two concepts and understand how to create a language regardless of whether I would interpret or compile things. So, I set myself up to create a language, that would interpret things. The result is `#lang funascii/interpret` which uses the interpreter described in [2.5 From parsing to interpretation](https://docs.racket-lang.org/ragg/#%28part._.From_parsing_to_interpretation%29)
+This was just too much for me as I needed to separate things and understand how to create a language regardless of whether I would interpret or compile things. 
+
+So, I set myself up to create a language, that would interpret things. The result is `#lang funascii/interpret` which uses the interpreter described in [2.5 From parsing to interpretation](https://docs.racket-lang.org/ragg/#%28part._.From_parsing_to_interpretation%29)
 
 **The files for this language are**:
 ```
@@ -127,13 +134,13 @@ following in the definitions window it should show the result of interpreting:
 ```
 ### What is the magic needed to create a language in this case?
 The file `interpret.rkt` has both the interpreter as well as the magic incantations needed to create an interpreted language, which are:
-* A reader, provided via `read_syntax` function
+* A reader, provided via a `read_syntax` function, which in turn invokes the tokenizer and parser in sequence.
 * An expander, provided via a `#%module-begin` macro.
 
 Note that this is the recipe that I use in all the languages I created in this project.
 
-## Third step: Rolling your sleeves, an interpreter with simple lisp-y racket + side effects
-Going backwards, I wanted to check how feasible it would be to create a language using just generic LISP/scheme core functions, without any need for fancy `syntax-parse` or similar constructs.
+## Going back: An interpreter with simple schemy racket + side effects
+Going backwards, I wanted to check how feasible it would be to create a language using mostly generic scheme functions, without any need for fancy `syntax-parse` or similar constructs.
 
 **The files for this language are**:
 ```
@@ -147,7 +154,7 @@ in the examples folder so that the first line reads:
 ```
 #lang funascii/interpret-2
 ```
-As mentioned, this interpreter uses standard LISP/scheme as can be shown in the sample below:
+As mentioned, this interpreter uses standard scheme as shown in the sample below:
 ```scheme
 (define (interpret-drawing drawing-el)
   (cond
@@ -177,10 +184,11 @@ As mentioned, this interpreter uses standard LISP/scheme as can be shown in the 
   )
 
 ```
-As can be seen above, even though this version uses standard syntax, but it does so in an imperative way where the `display` call is done as part of the final tree walk step of the input s-expression. 
+
+It's interesting to observe that even though this version uses standard syntax, it does so in an imperative way where the `display` call is done as part of the final tree walk step of the input s-expression. 
 
 
-## Fourth step: Rolling your sleeves, an interpreter with simple functional lisp-y racket
+## One more: An interpreter with simple functional schemy racket
 This final step is similar to the previous one, just more functional in that it composes the result as the output of functions and has a single print statement at the end.
 
 **The files for this language are**:
@@ -219,7 +227,7 @@ This interpreter uses functional coding style:
 ```
 
 # So what is the difference between interpretation and compilation?
-The simplest answer is that in interpretation, the input syntax object is fed as data to a function that interprets, whereas in compilation, racket, after performing macro transformations, expects actual function bindings present in the expander to match each of the first elements in the input syntax object.
+The simplest answer is that in interpretation, the syntax object which results from the reader is fed as data to a function that interprets, whereas in compilation, racket, after performing macro transformations, expects actual function bindings present in the expander to match each of the first elements in the input syntax object.
 
 An example will make this clearer. If you run this program:
 ```
@@ -233,7 +241,7 @@ The output that you get is:
   (rows (repeat 3) (chunk 9 "X") ";")
 )
 ```
-In the compiled case, which is in the file [semantics.rkt](./semantics.rkt), you can see that `drawing`, `rows` and `chunk` have actual bindings exported:
+In the compiled case, which is in the file [semantics.rkt](./semantics.rkt), you can see that the first elements `drawing`, `rows` and `chunk` have actual bindings exported:
 ```scheme
 ...
 ;; Wire up the use of "drawing", "rows", and "chunk" to these
@@ -255,10 +263,10 @@ racket will directly call.
          (rename-out [interpreter-mod #%module-begin]))
 
 ```
-> Note: Don't get confused! The `#%module-begin` is needed for the expander, but it will need to have access to the `interpret-drawing` function to feed the input syntax object into.
+> Note: Don't get confused by The `#%module-begin` above as that is needed for the expander in any language. The expander will need to have visibility to the `interpret-drawing` function to feed the input syntax object into it.
 
 ## Further inspecting the differences between interpretation and compilation
-It's possible to see even in more detail the difference between interpretation and compilation by looking at the resulting racket core syntax for each language. In order to do that, you can use the function expand directly. For your convenience I have included a little program in the utilities folder for exactly that purpose. You use it by running from the project folder this line:
+It's possible to see even in more detail the difference between interpretation and compilation by looking at the resulting [racket fully expanded syntax](https://docs.racket-lang.org/reference/syntax-model.html#%28part._fully-expanded%29) for each language. In order to do that, you can use the function expand directly. For your convenience I have included a little program in the utilities folder for that purpose. You use it by running from the project folder this line:
 ```bash
 $ racket utilities/test-expand.rkt
 ```
