@@ -1,11 +1,10 @@
 # Creating a minimal language in racket
 This project is a modified version of the examples described in 
 [ragg: a Racket AST Generator Generator](https://docs.racket-lang.org/ragg/)
-which are in the project [Simple line drawing](https://github.com/dyoo/ragg/tree/master/ragg/examples/simple-line-drawing) by  Danny Yoo. 
+which are in the project [Simple line drawing](https://github.com/dyoo/ragg/tree/master/ragg/examples/simple-line-drawing) by  Danny Yoo. You may want to read the original documentation as this serves as a complement to it. 
 
 # Purpose of this project
-I was having trouble understanding (1) what is the **minimum** amount of boilerplate needed to create a language in racket and (2) the difference
-between when things are interpreted and when things are compiled in racket. 
+I was having trouble understanding **(1)** what is the **minimum** amount of boilerplate needed to create a language in racket and **(2)** the difference between when things are interpreted and when things are compiled in racket. 
 
 The `ragg` guide assumes you understand how to create a language, but the concept, was not that clear to me. Add to that, the different racket functions/macros, though very handy, were creating a layer of magic which in my case was making things harder to understand.
 
@@ -231,9 +230,14 @@ The simplest answer is that in interpretation, the syntax object which results f
 
 An example will make this clearer. If you run this program:
 ```
+#lang funascii/parse-only
+
+3 9 X;
+6 3 b 3 X 3 b;
+3 9 X;
 
 ```
-The output that you get is:
+The output that you get is the parse tree out of the reader:
 ```scheme
 '(drawing 
   (rows (repeat 3) (chunk 9 "X") ";") 
@@ -259,14 +263,12 @@ We only need to provide interpret-drawing as it will
 be the only function, other than the #%module-begin which
 racket will directly call.
 |#
-(provide interpret-drawing
-         (rename-out [interpreter-mod #%module-begin]))
+(provide interpret-drawing ...)
 
 ```
-> Note: Don't get confused by The `#%module-begin` above as that is needed for the expander in any language. The expander will need to have visibility to the `interpret-drawing` function to feed the input syntax object into it.
 
 ## Further inspecting the differences between interpretation and compilation
-It's possible to see even in more detail the difference between interpretation and compilation by looking at the resulting [racket fully expanded syntax](https://docs.racket-lang.org/reference/syntax-model.html#%28part._fully-expanded%29) for each language. In order to do that, you can use the function expand directly. For your convenience I have included a little program in the utilities folder for that purpose. You use it by running from the project folder this line:
+It's possible to see in detail the difference between interpretation and compilation by looking at the resulting [racket fully expanded syntax](https://docs.racket-lang.org/reference/syntax-model.html#%28part._fully-expanded%29) for each language. In order to do that, you can use the function [expand](https://docs.racket-lang.org/reference/Expanding_Top-Level_Forms.html#%28def._%28%28quote._~23~25kernel%29._expand%29%29) directly. For your convenience I have included a little program in the utilities folder for that purpose. You use it by running from the project folder this line:
 ```bash
 $ racket utilities/test-expand.rkt
 ```
